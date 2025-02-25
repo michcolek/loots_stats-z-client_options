@@ -1,0 +1,51 @@
+LootItemBox < UIWidget
+  id: lootItemBox
+  border-width: 1
+  border-color: #000000
+  color: #ffffff
+  text-align: center
+  size: 150 90
+
+  Item
+    id: item
+    phantom: true
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-color: #ffffffff
+    margin-top: 5
+
+  Label
+    id: text
+    text-align: center
+    color: #ffffff
+    anchors.top: item.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+LootMonsterBox < UIWidget
+  id: lootMonsterBox
+  border-width: 1
+  border-color: #000000
+  color: #ffffff
+  text-align: center
+  size: 150 90
+
+  Creature
+    id: creature
+    phantom: true
+    height: 40
+    width: 40
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-color: #ffffffff
+    margin-top: 5
+
+  Label
+    id: text
+    text-align: center
+    color: #ffffff
+    anchors.top: creature.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right

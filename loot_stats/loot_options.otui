@@ -1,5 +1,3 @@
--- loot_options.otui - Options panel definition
-
 Panel
   id: lootStatsPanel
   anchors.fill: parent
