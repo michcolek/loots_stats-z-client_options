@@ -1,0 +1,160 @@
+-- loot_stats.otui - Main window definition
+
+LootItemBox < UIWidget
+  id: lootItemBox
+  border-width: 1
+  border-color: #000000
+  color: #ffffff
+  text-align: center
+  size: 150 90
+
+  Item
+    id: item
+    phantom: true
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-color: #ffffffff
+    margin-top: 5
+
+  Label
+    id: text
+    text-align: center
+    color: #ffffff
+    anchors.top: item.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+LootMonsterBox < UIWidget
+  id: lootMonsterBox
+  border-width: 1
+  border-color: #000000
+  color: #ffffff
+  text-align: center
+  size: 150 90
+
+  Creature
+    id: creature
+    phantom: true
+    height: 40
+    width: 40
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-color: #ffffffff
+    margin-top: 5
+
+  Label
+    id: text
+    text-align: center
+    color: #ffffff
+    anchors.top: creature.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+MainWindow
+  id: lootStatsMain
+  !text: tr('Loot Statistics')
+  size: 550 515
+  @onEscape: modules.loot_stats.toggle()
+
+  TabButton
+    id: monstersTab
+    !text: tr('Monsters')
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    anchors.top: parent.top
+    margin-right: 5
+    margin-top: 5
+
+  TabButton
+    id: allLootTab
+    !text: tr('All Loot')
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 5
+    margin-top: 5
+
+  Panel
+    id: panelCreatureView
+    anchors.top: monstersTab.bottom
+    anchors.left: parent.left
+    height: 0
+    width: 250
+    margin-top: 5
+    visible: false
+
+    Creature
+      id: creatureView
+      phantom: true
+      height: 40
+      width: 40
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      image-color: #ffffffff
+
+    Label
+      id: textCreatureView
+      text-align: left
+      color: #ffffff
+      height: 50
+      width: 205
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: creatureView.right
+      margin-left: 5
+
+  Panel
+    id: contentPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: panelCreatureView.bottom
+    anchors.bottom: bottomPanel.top
+    margin-top: 10
+    margin-bottom: 10
+
+    VerticalScrollBar
+      id: itemsPanelScrollBar
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 24
+      pixels-scroll: true
+
+    Panel
+      id: itemsPanel
+      anchors.left: parent.left
+      anchors.right: itemsPanelScrollBar.left
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      margin-left: 5
+      margin-right: 5
+      layout:
+        type: grid
+        cell-size: 160 90
+        flow: true
+
+  Panel
+    id: bottomPanel
+    height: 30
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+
+    Button
+      id: clearButton
+      !text: tr('Clear Data')
+      width: 80
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 10
+      @onClick: modules.loot_stats.confirmClearData()
+
+    Button
+      id: closeButton
+      !text: tr('Close')
+      width: 64
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 10
+      @onClick: modules.loot_stats.toggle()

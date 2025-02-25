@@ -1,0 +1,14 @@
+Module
+  name: loot_stats
+  description: Show loot statistics and killed creatures.
+  author: EgzoT, updated for OTClient Mehah
+  website: https://github.com/EgzoT/-OTClient-Mod-loot_stats
+  version: 2.0.0
+
+  autoload: true
+  autoload-priority: 1000
+  sandboxed: true
+  dependencies: [ game_interface ]
+  scripts: [ loot_stats ]
+  @onLoad: LootStats.init()
+  @onUnload: LootStats.terminate()

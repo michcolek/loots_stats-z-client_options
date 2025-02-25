@@ -1,0 +1,4 @@
+LootIcon < UIItem
+  size: 32 32
+  virtual: true
+  phantom: false

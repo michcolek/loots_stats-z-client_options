@@ -1,0 +1,145 @@
+-- loot_options.otui - Options panel definition
+
+Panel
+  id: lootStatsPanel
+  anchors.fill: parent
+  padding: 15
+
+  Label
+    id: titleLabel
+    text: Loot Stats Settings
+    text-align: center
+    font: verdana-11px-antialised
+    height: 20
+    margin-bottom: 10
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+
+  VerticalSeparator
+    id: separator1
+    height: 2
+    margin-bottom: 10
+    anchors.top: titleLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  Panel
+    id: showLootPanel
+    height: 40
+    anchors.top: separator1.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    
+    OptionCheckBox
+      id: showLootOnScreen
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Show the loot on the screen')
+      @onCheckChange: modules.loot_stats.setShowLootOnScreen(self:isChecked())
+
+  Panel
+    id: amountPanel
+    height: 50
+    anchors.top: showLootPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    
+    Label
+      id: amountLabel
+      text: The amount of loot on the screen
+      anchors.left: parent.left
+      anchors.top: parent.top
+      text-align: left
+      margin-bottom: 5
+      
+    HorizontalScrollBar
+      id: amountLootOnScreen
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: amountLabel.bottom
+      step: 1
+      minimum: 1
+      maximum: 20
+      @onValueChange: modules.loot_stats.setAmountLootOnScreen(self:getValue())
+
+  Panel
+    id: delayPanel
+    height: 50
+    anchors.top: amountPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    
+    Label
+      id: delayLabel
+      text: Time delay to delete loot from screen
+      anchors.left: parent.left
+      anchors.top: parent.top
+      text-align: left
+      margin-bottom: 5
+      
+    HorizontalScrollBar
+      id: delayTimeLootOnScreen
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: delayLabel.bottom
+      step: 100
+      minimum: 500
+      maximum: 10000
+      @onValueChange: modules.loot_stats.setDelayTimeLootOnScreen(self:getValue())
+
+  Label
+    id: processingLabel
+    text: Processing Options
+    color: #ffffff
+    anchors.top: delayPanel.bottom
+    anchors.left: parent.left
+    margin-top: 15
+
+  VerticalSeparator
+    id: separator2
+    height: 2
+    margin-top: 4
+    margin-bottom: 10
+    anchors.top: processingLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  Panel
+    id: monsterLevelPanel
+    height: 40
+    anchors.top: separator2.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    
+    OptionCheckBox
+      id: ignoreMonsterLevelSystem
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Ignore monster level system')
+      !tooltip: tr('When OFF - ignore level in bracket ("Monster [100]" -> "Monster")\nWhen ON don\'t ignore level in bracket')
+      @onCheckChange: modules.loot_stats.setIgnoreMonsterLevelSystem(self:isChecked())
+
+  Panel
+    id: dotPanel
+    height: 40
+    anchors.top: monsterLevelPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    
+    OptionCheckBox
+      id: ignoreLastSignWhenDot
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Ignore last sign when dot')
+      !tooltip: tr('When OFF delete last character in log when it is dot')
+      @onCheckChange: modules.loot_stats.setIgnoreLastSignWhenDot(self:isChecked())
+
+  Button
+    id: clearData
+    !text: tr('Clear Data')
+    width: 90
+    height: 25
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    margin-bottom: 10
+    @onClick: modules.loot_stats.confirmClearData()
