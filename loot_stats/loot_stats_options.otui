@@ -1,0 +1,73 @@
+Panel
+  id: lootStatsOptionsPanel
+  layout: verticalBox
+  margin-top: 15
+
+  Label
+    text: Loot Display Settings
+    text-align: center
+    font: verdana-11px-rounded
+    margin-top: 5
+    margin-bottom: 10
+
+  OptionCheckBox
+    id: showLootOnScreen
+    text: Show loot on screen
+
+  HorizontalSeparator
+    margin-top: 10
+    margin-bottom: 10
+
+  Panel
+    id: amountPanel
+    height: 20
+    margin-left: 15
+    margin-right: 15
+    
+    Label
+      id: amountLabel
+      text: Number of loot entries to display:
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+    
+    SpinBox
+      id: amountLootOnScreen
+      minimum: 1
+      maximum: 20
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 60
+      
+  Panel
+    id: delayPanel
+    height: 20
+    margin-left: 15
+    margin-right: 15
+    margin-top: 5
+    
+    Label
+      id: delayLabel
+      text: Display time (ms):
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+    
+    SpinBox
+      id: delayTimeLootOnScreen
+      minimum: 500
+      maximum: 10000
+      step: 500
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 60
+
+  HorizontalSeparator
+    margin-top: 10
+    margin-bottom: 10
+
+  OptionCheckBox
+    id: ignoreMonsterLevelSystem
+    text: Ignore monster level system
+
+  OptionCheckBox
+    id: ignoreLastSignWhenDot
+    text: Ignore last sign when using dot notation

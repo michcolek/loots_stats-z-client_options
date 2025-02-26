@@ -26,8 +26,8 @@ MainWindow
     id: panelCreatureView
     anchors.top: monstersTab.bottom
     anchors.left: parent.left
+    anchors.right: parent.right
     height: 0
-    width: 250
     margin-top: 5
     visible: false
 
@@ -45,9 +45,9 @@ MainWindow
       text-align: left
       color: #ffffff
       height: 50
-      width: 205
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: creatureView.right
+      anchors.right: parent.right
       margin-left: 5
 
   Panel
