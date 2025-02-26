@@ -39,6 +39,109 @@ local uniqueIdCounter = 1         -- For generating unique IDs
 local itemDatabase = {}           -- Cache for item name to client ID lookups
 
 -- ====
+-- Style Creation
+-- ====
+
+function LootStats.createStyles()
+    -- Create the LootIcon style programmatically
+    if not g_ui.isStyleDefined('LootIcon') then
+        -- First try to import from file
+        local success = pcall(function() g_ui.importStyle('loot_icons') end)
+        
+        -- If that fails, create the style through code
+        if not success then
+            LootStats.log("info", "Creating LootIcon style programmatically")
+            g_ui.createStyle([[
+            LootIcon < UIItem
+              size: 32 32
+              virtual: true
+              phantom: false
+            ]])
+        end
+    end
+    
+    -- Similarly create other needed styles
+    if not g_ui.isStyleDefined('LootItemBox') or not g_ui.isStyleDefined('LootMonsterBox') then
+        local success = pcall(function() g_ui.importStyle('loot_item_box') end)
+        
+        if not success then
+            LootStats.log("info", "Creating item box styles programmatically")
+            g_ui.createStyle([[
+            LootItemBox < UIWidget
+              id: lootItemBox
+              border-width: 1
+              border-color: #000000
+              color: #ffffff
+              text-align: center
+              size: 150 90
+
+              Item
+                id: item
+                phantom: true
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                image-color: #ffffffff
+                margin-top: 5
+
+              Label
+                id: text
+                text-align: center
+                color: #ffffff
+                anchors.top: item.bottom
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+            ]])
+            
+            g_ui.createStyle([[
+            LootMonsterBox < UIWidget
+              id: lootMonsterBox
+              border-width: 1
+              border-color: #000000
+              color: #ffffff
+              text-align: center
+              size: 150 90
+
+              Creature
+                id: creature
+                phantom: true
+                height: 40
+                width: 40
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                image-color: #ffffffff
+                margin-top: 5
+
+              Label
+                id: text
+                text-align: center
+                color: #ffffff
+                anchors.top: creature.bottom
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+            ]])
+        end
+    end
+    
+    -- Create main window style if needed
+    if not g_ui.isStyleDefined('MessageBoxWindow') then
+        local success = pcall(function() g_ui.importStyle('loot_stats') end)
+        
+        if not success then
+            LootStats.log("info", "Creating main window style programmatically")
+            g_ui.createStyle([[
+            MainWindow
+              id: lootStatsMain
+              !text: tr('Loot Statistics')
+              size: 550 515
+              @onEscape: modules.loot_stats.toggle()
+            ]])
+        end
+    end
+end
+
+-- ====
 -- Logging Helper
 -- ====
 
@@ -160,17 +263,8 @@ end
 function LootStats.init()
     LootStats.log("info", "Initializing module")
     
-    -- Import UI styles with error handling - first try the combined file
-    local success = pcall(function() 
-        g_ui.importStyle('loot_stats') 
-    end)
-    
-    -- If combined file fails, try loading individual files
-    if not success then
-        -- Try loading styles individually
-        pcall(function() g_ui.importStyle('loot_icons') end)
-        pcall(function() g_ui.importStyle('loot_item_box') end)
-    end
+    -- Create required styles first
+    LootStats.createStyles()
     
     -- Load settings
     LootStats.loadSettings()
@@ -188,17 +282,21 @@ function LootStats.init()
     })
     
     -- Create UI elements
-    LootStats.createLootStatsWindow()
+    pcall(function() LootStats.createLootStatsWindow() end)
     
     -- Create module button in client_topmenu if available
     if modules.client_topmenu then
-        lootStatsButton = modules.client_topmenu.addRightGameToggleButton(
-            'lootStatsButton', 
-            tr('Loot Stats'), 
-            '/images/game/loot_stats', 
-            function() LootStats.toggle() end
-        )
-        lootStatsButton:setOn(false)
+        pcall(function()
+            lootStatsButton = modules.client_topmenu.addRightGameToggleButton(
+                'lootStatsButton', 
+                tr('Loot Stats'), 
+                '/images/game/loot_stats', 
+                function() LootStats.toggle() end
+            )
+            if lootStatsButton then
+                lootStatsButton:setOn(false)
+            end
+        end)
     end
     
     -- Initialize if game already started
@@ -208,105 +306,15 @@ function LootStats.init()
     
     -- Create options panel if client_options is available
     if modules.client_options then
-        LootStats.setupOptionsPanel()
+        pcall(function() LootStats.setupOptionsPanel() end)
     end
     
-    -- Initialize widget cache
-    LootStats.initWidgetCache()
+    -- Initialize widget cache (with error handling)
+    pcall(function() LootStats.initWidgetCache() end)
     
     -- Initialize item database
-    LootStats.initItemDatabase()
+    pcall(function() LootStats.initItemDatabase() end)
 end
-    -- Create UI elements
-    function LootStats.createLootStatsWindow()
-        if lootStatsWindow then return end
-        
-        -- Create a basic window if the template fails to load
-        local success, result = pcall(function() 
-            return g_ui.displayUI('loot_stats')
-        end)
-        
-        if not success or not result then
-            -- Create a simple window as fallback
-            LootStats.log("warning", "Failed to load loot_stats UI, creating basic window")
-            lootStatsWindow = g_ui.createWidget('MainWindow', rootWidget)
-            lootStatsWindow:setId('lootStatsMain')
-            lootStatsWindow:setText('Loot Statistics')
-            lootStatsWindow:setSize({width = 400, height = 400})
-            
-            -- Add close button
-            local closeButton = g_ui.createWidget('Button', lootStatsWindow)
-            closeButton:setId('closeButton')
-            closeButton:setText('Close')
-            closeButton:setWidth(60)
-            closeButton:setAnchor(AnchorRight, 'parent', AnchorRight)
-            closeButton:setAnchor(AnchorBottom, 'parent', AnchorBottom)
-            closeButton.onClick = function() LootStats.toggle() end
-            
-            -- Add tabs
-            local monstersTab = g_ui.createWidget('TabButton', lootStatsWindow)
-            monstersTab:setId('monstersTab')
-            monstersTab:setText('Monsters')
-            monstersTab:setChecked(true)
-            monstersTab:setAnchor(AnchorLeft, 'parent', AnchorLeft)
-            monstersTab:setAnchor(AnchorTop, 'parent', AnchorTop)
-            monstersTab:setWidth(80)
-            monstersTab.onMouseRelease = function(widget, mousePos, mouseButton)
-                LootStats.showMonstersList(widget, mousePos, mouseButton)
-            end
-            
-            local allLootTab = g_ui.createWidget('TabButton', lootStatsWindow)
-            allLootTab:setId('allLootTab')
-            allLootTab:setText('All Loot')
-            allLootTab:setAnchor(AnchorLeft, 'monstersTab', AnchorRight)
-            allLootTab:setAnchor(AnchorTop, 'parent', AnchorTop)
-            allLootTab:setWidth(80)
-            allLootTab.onMouseRelease = function(widget, mousePos, mouseButton)
-                LootStats.showAllLootList(widget, mousePos, mouseButton)
-            end
-            
-            -- Add items panel
-            local panel = g_ui.createWidget('Panel', lootStatsWindow)
-            panel:setId('itemsPanel')
-            panel:setAnchor(AnchorLeft, 'parent', AnchorLeft)
-            panel:setAnchor(AnchorRight, 'parent', AnchorRight)
-            panel:setAnchor(AnchorTop, 'monstersTab', AnchorBottom)
-            panel:setAnchor(AnchorBottom, 'closeButton', AnchorTop)
-            panel:setMarginTop(10)
-            panel:setMarginBottom(10)
-        else
-            lootStatsWindow = result
-        
-            -- Connect tab buttons
-            local monstersTab = lootStatsWindow:getChildById('monstersTab')
-            if monstersTab then
-                monstersTab.onMouseRelease = function(widget, mousePos, mouseButton)
-                    LootStats.showMonstersList(widget, mousePos, mouseButton)
-                end
-            end
-            
-            local allLootTab = lootStatsWindow:getChildById('allLootTab')
-            if allLootTab then
-                allLootTab.onMouseRelease = function(widget, mousePos, mouseButton)
-                    LootStats.showAllLootList(widget, mousePos, mouseButton)
-                end
-            end
-            
-            -- Connect close button
-            local closeButton = lootStatsWindow:getChildById('closeButton')
-            if closeButton then
-                closeButton.onClick = function() LootStats.toggle() end
-            end
-            
-            -- Connect clear data button if it exists
-            local clearButton = lootStatsWindow:getChildById('clearButton')
-            if clearButton then
-                clearButton.onClick = function() LootStats.confirmClearData() end
-            end
-        end
-        
-        lootStatsWindow:hide()
-    end
 
 function LootStats.terminate()
     LootStats.log("info", "Terminating module")
@@ -384,12 +392,23 @@ function LootStats.initWidgetCache()
     
     -- Pre-create widgets for cache
     local mapPanel = modules.game_interface.getMapPanel()
-    if mapPanel then
-        for i = 1, 20 do
-            local widget = g_ui.createWidget('LootIcon', mapPanel)
+    if not mapPanel then
+        LootStats.log("warning", "Map panel not found, widget cache initialization skipped")
+        return
+    end
+    
+    for i = 1, 20 do
+        -- Create with proper error handling
+        local success, widget = pcall(function()
+            return g_ui.createWidget('LootIcon', mapPanel)
+        end)
+        
+        if success and widget then
             widget:setId('lootStatsIcon' .. i)
             widget:hide()
             table.insert(widgetCache, widget)
+        else
+            LootStats.log("warning", "Failed to create LootIcon widget #" .. i)
         end
     end
 end
@@ -397,7 +416,7 @@ end
 function LootStats.getIconFromCache()
     -- Find a hidden widget in the cache
     for _, widget in pairs(widgetCache) do
-        if not widget:isVisible() then
+        if widget and not widget:isDestroyed() and not widget:isVisible() then
             return widget
         end
     end
@@ -405,10 +424,15 @@ function LootStats.getIconFromCache()
     -- Create a new widget if necessary
     local mapPanel = modules.game_interface.getMapPanel()
     if mapPanel then
-        local widget = g_ui.createWidget('LootIcon', mapPanel)
-        widget:setId('lootStatsIcon' .. (#widgetCache + 1))
-        table.insert(widgetCache, widget)
-        return widget
+        local success, widget = pcall(function()
+            return g_ui.createWidget('LootIcon', mapPanel)
+        end)
+        
+        if success and widget then
+            widget:setId('lootStatsIcon' .. (#widgetCache + 1))
+            table.insert(widgetCache, widget)
+            return widget
+        end
     end
     
     return nil
@@ -439,7 +463,7 @@ function LootStats.initItemDatabase()
     
     -- Attempt to cache common items by name
     LootStats.log("info", "Initializing item database cache")
-    for id = 100, 5000 do -- Limiting to a reasonable range for performance
+    for id = 150, 5000 do -- Starting from 150 to avoid known invalid IDs
         local success, itemType = pcall(function() 
             return g_things.getThingType(id, ThingCategoryItem) 
         end)
@@ -475,7 +499,7 @@ function LootStats.getItemClientId(itemName)
     local ThingCategoryItem = 0
     
     -- Try to find by name (limit search range for performance)
-    for id = 100, 5000 do
+    for id = 150, 5000 do
         local success, itemType = pcall(function() 
             return g_things.getThingType(id, ThingCategoryItem) 
         end)
@@ -504,14 +528,16 @@ function LootStats.onGameStart()
     
     -- Set up main panel button if not already created
     if modules.game_mainpanel and not lootStatsButton then
-        lootStatsButton = modules.game_mainpanel.addToggleButton(
-            'lootStatsButton', 
-            tr('Loot Stats'), 
-            '/images/game/loot_stats', 
-            LootStats.toggle, 
-            false, 
-            5
-        )
+        pcall(function()
+            lootStatsButton = modules.game_mainpanel.addToggleButton(
+                'lootStatsButton', 
+                tr('Loot Stats'), 
+                '/images/game/loot_stats', 
+                LootStats.toggle, 
+                false, 
+                5
+            )
+        end)
     end
     
     -- Update options panel if exists
@@ -720,7 +746,7 @@ end
 function LootStats.createLootStatsWindow()
     if lootStatsWindow then return end
     
-    -- Create a basic window if the template fails to load
+    -- Create window (with error handling)
     local success, result = pcall(function() 
         return g_ui.displayUI('loot_stats')
     end)
@@ -1382,131 +1408,155 @@ function LootStats.setupOptionsPanel()
         return
     end
     
-    -- First try to find an existing panel
-    LootStats.optionsPanel = modules.client_options.getPanel():recursiveGetChildById('lootStatsPanel')
+    local panel = modules.client_options.getPanel()
+    if not panel then
+        return
+    end
     
-    -- If panel doesn't exist, try to create it
+    -- Try to use existing panel or create a new one
+    LootStats.optionsPanel = panel:recursiveGetChildById('lootStatsPanel')
+    
     if not LootStats.optionsPanel then
-        -- Try to load from the options file
-        local success = pcall(function() 
-            LootStats.optionsPanel = g_ui.loadUI('loot_options', modules.client_options.getPanel())
+        -- Create a new panel via loadUI with error handling
+        local success, result = pcall(function()
+            return g_ui.loadUI('loot_options', panel)
         end)
         
-        -- If loading failed, create panel manually
-        if not success or not LootStats.optionsPanel then
-            LootStats.log("warning", "Failed to load loot_options UI, creating basic options panel")
+        if success and result then
+            LootStats.optionsPanel = result
+        else
+            -- Create fallback panel manually
+            LootStats.log("warning", "Failed to load options panel, creating fallback panel")
             
-            local panel = g_ui.createWidget('Panel', modules.client_options.getPanel())
-            panel:setId('lootStatsPanel')
-            panel:setLayout(UIVerticalLayout.create(panel))
-            panel:setVisible(false)
+            local newPanel = g_ui.createWidget('Panel', panel)
+            newPanel:setId('lootStatsPanel')
+            newPanel:fill('parent')
+            newPanel:setVisible(false)
             
-            local titleLabel = g_ui.createWidget('Label', panel)
+            -- Create basic settings widgets
+            local titleLabel = g_ui.createWidget('Label', newPanel)
             titleLabel:setText('Loot Stats Settings')
-            titleLabel:setAlign(AlignCenter)
+            titleLabel:setPosition({x = 50, y = 20})
             
-            local showLootCheckbox = g_ui.createWidget('OptionCheckBox', panel)
+            local showLootCheckbox = g_ui.createWidget('CheckBox', newPanel)
             showLootCheckbox:setId('showLootOnScreen')
-            showLootCheckbox:setText('Show the loot on the screen')
+            showLootCheckbox:setText('Show loot on screen')
+            showLootCheckbox:setPosition({x = 30, y = 60})
             showLootCheckbox.onCheckChange = function(widget, checked)
                 LootStats.setShowLootOnScreen(checked)
             end
             
-            local clearDataButton = g_ui.createWidget('Button', panel)
+            local clearDataButton = g_ui.createWidget('Button', newPanel)
             clearDataButton:setId('clearData')
             clearDataButton:setText('Clear Data')
+            clearDataButton:setPosition({x = 100, y = 120})
             clearDataButton.onClick = function()
                 LootStats.confirmClearData()
             end
             
-            LootStats.optionsPanel = panel
+            LootStats.optionsPanel = newPanel
+        end
+        
+        -- Try to register the panel
+        if modules.client_options.addTab then
+            pcall(function()
+                modules.client_options.addTab('Loot Stats', LootStats.optionsPanel, '/images/game/loot_stats')
+            end)
+        elseif modules.client_options.addButton then
+            pcall(function()
+                modules.client_options.addButton('Interface', 'Loot Stats', LootStats.optionsPanel)
+            end)
         end
     end
     
-    -- Make sure the loot stats category exists
-    if modules.client_options.addTab then
-        pcall(function() 
-            modules.client_options.addTab('Loot Stats', LootStats.optionsPanel, '/images/game/loot_stats')
-        end)
+    -- Make sure callbacks are properly connected
+    local showLootCheckbox = LootStats.optionsPanel:recursiveGetChildById('showLootOnScreen')
+    if showLootCheckbox then
+        showLootCheckbox.onCheckChange = function(widget, checked)
+            LootStats.setShowLootOnScreen(checked)
+        end
     end
     
-    -- Connect UI elements to settings
+    local amountLootScrollBar = LootStats.optionsPanel:recursiveGetChildById('amountLootOnScreen')
+    if amountLootScrollBar then
+        local valueBar = amountLootScrollBar:recursiveGetChildById('valueBar')
+        if valueBar then
+            valueBar.onValueChange = function(widget, value)
+                LootStats.setAmountLootOnScreen(value)
+            end
+        end
+    end
+    
+    local delayLootScrollBar = LootStats.optionsPanel:recursiveGetChildById('delayTimeLootOnScreen')
+    if delayLootScrollBar then
+        local valueBar = delayLootScrollBar:recursiveGetChildById('valueBar')
+        if valueBar then
+            valueBar.onValueChange = function(widget, value)
+                LootStats.setDelayTimeLootOnScreen(value)
+            end
+        end
+    end
+    
+    local ignoreMonsterCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreMonsterLevelSystem')
+    if ignoreMonsterCheckbox then
+        ignoreMonsterCheckbox.onCheckChange = function(widget, checked)
+            LootStats.setIgnoreMonsterLevelSystem(checked)
+        end
+    end
+    
+    local ignoreDotCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreLastSignWhenDot')
+    if ignoreDotCheckbox then
+        ignoreDotCheckbox.onCheckChange = function(widget, checked)
+            LootStats.setIgnoreLastSignWhenDot(checked)
+        end
+    end
+    
+    local clearDataButton = LootStats.optionsPanel:recursiveGetChildById('clearData')
+    if clearDataButton then
+        clearDataButton.onClick = function()
+            LootStats.confirmClearData()
+        end
+    end
+    
+    -- Update UI with current settings
     LootStats.updateOptionsUI()
 end
 
--- Update the options tab in client_options module
 function LootStats.updateOptionsUI()
     if not LootStats.optionsPanel then return end
     
     -- Update all UI elements with current settings
     local showLootCheckbox = LootStats.optionsPanel:recursiveGetChildById('showLootOnScreen')
     if showLootCheckbox then
-        showLootCheckbox:setChecked(settings.showLootOnScreen)
+        pcall(function() showLootCheckbox:setChecked(settings.showLootOnScreen) end)
     end
     
     local amountSlider = LootStats.optionsPanel:recursiveGetChildById('amountLootOnScreen')
     if amountSlider then
         local valueBar = amountSlider:recursiveGetChildById('valueBar')
         if valueBar then
-            valueBar:setValue(settings.amountLootOnScreen)
+            pcall(function() valueBar:setValue(settings.amountLootOnScreen) end)
         end
-        amountSlider:setText('The amount of loot on the screen: ' .. settings.amountLootOnScreen)
+        pcall(function() amountSlider:setText('The amount of loot on the screen: ' .. settings.amountLootOnScreen) end)
     end
     
     local delaySlider = LootStats.optionsPanel:recursiveGetChildById('delayTimeLootOnScreen')
     if delaySlider then
         local valueBar = delaySlider:recursiveGetChildById('valueBar')
         if valueBar then
-            valueBar:setValue(settings.delayTimeLootOnScreen)
+            pcall(function() valueBar:setValue(settings.delayTimeLootOnScreen) end)
         end
-        delaySlider:setText('Time delay to delete loot from screen: ' .. settings.delayTimeLootOnScreen)
+        pcall(function() delaySlider:setText('Time delay to delete loot from screen: ' .. settings.delayTimeLootOnScreen) end)
     end
     
     local ignoreMonsterCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreMonsterLevelSystem')
     if ignoreMonsterCheckbox then
-        ignoreMonsterCheckbox:setChecked(settings.ignoreMonsterLevelSystem)
+        pcall(function() ignoreMonsterCheckbox:setChecked(settings.ignoreMonsterLevelSystem) end)
     end
     
     local ignoreDotCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreLastSignWhenDot')
     if ignoreDotCheckbox then
-        ignoreDotCheckbox:setChecked(settings.ignoreLastSignWhenDot)
-    end
-end
-function LootStats.updateOptionsUI()
-    if not LootStats.optionsPanel then return end
-    
-    -- Update all UI elements with current settings
-    local showLootCheckbox = LootStats.optionsPanel:recursiveGetChildById('showLootOnScreen')
-    if showLootCheckbox then
-        showLootCheckbox:setChecked(settings.showLootOnScreen)
-    end
-    
-    local amountSlider = LootStats.optionsPanel:recursiveGetChildById('amountLootOnScreen')
-    if amountSlider then
-        local valueBar = amountSlider:recursiveGetChildById('valueBar')
-        if valueBar then
-            valueBar:setValue(settings.amountLootOnScreen)
-        end
-        amountSlider:setText('The amount of loot on the screen: ' .. settings.amountLootOnScreen)
-    end
-    
-    local delaySlider = LootStats.optionsPanel:recursiveGetChildById('delayTimeLootOnScreen')
-    if delaySlider then
-        local valueBar = delaySlider:recursiveGetChildById('valueBar')
-        if valueBar then
-            valueBar:setValue(settings.delayTimeLootOnScreen)
-        end
-        delaySlider:setText('Time delay to delete loot from screen: ' .. settings.delayTimeLootOnScreen)
-    end
-    
-    local ignoreMonsterCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreMonsterLevelSystem')
-    if ignoreMonsterCheckbox then
-        ignoreMonsterCheckbox:setChecked(settings.ignoreMonsterLevelSystem)
-    end
-    
-    local ignoreDotCheckbox = LootStats.optionsPanel:recursiveGetChildById('ignoreLastSignWhenDot')
-    if ignoreDotCheckbox then
-        ignoreDotCheckbox:setChecked(settings.ignoreLastSignWhenDot)
+        pcall(function() ignoreDotCheckbox:setChecked(settings.ignoreLastSignWhenDot) end)
     end
 end
 
